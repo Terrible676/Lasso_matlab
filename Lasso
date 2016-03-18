@@ -1,0 +1,36 @@
+cd D:\RCode\M_Data;
+M = CSVREAD('HS300ClosePrice.csv');
+IndexPrice = CSVREAD('Index_HS.csv');
+IndexStd = (IndexPrice - mean(IndexPrice))/std(IndexPrice);
+StockNum = size(M,2);
+
+% 标准化
+MStd = M;
+for i=1:StockNum
+    aa = M(:,i);
+    aa = (aa - mean(aa))/std(aa);
+    MStd(:,i) = aa;
+end
+
+% ADMM iteration
+K = 100; % K次迭代
+lam = 10; % lambda
+p = 100;  % rou
+xk = ones(1,StockNum)'; 
+zk = xk;
+uk = zk;
+for i=1:K
+    xk1 = inv(MStd'*MStd+p*eye(StockNum))*(MStd'*IndexStd+p*(zk-uk));
+    % zk1 = S_fuc(xk1+uk);   S function S(lam/p,x)
+    % (a)+ : (a+abs(a))/2
+    alph = xk1 + uk;
+    ka = lam / p;
+    part1 = alph - ka; part2 = -alph-ka
+    zk1 = (part1 + abs(part1))/2 - (part2 + abs(part2))/2;
+    uk1 = uk + xk1-zk1;
+    xk = xk1;
+    zk = zk1;
+    uk = uk1;
+end
+
+res = 100*xk;
